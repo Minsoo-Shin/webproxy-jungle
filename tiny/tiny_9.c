@@ -36,11 +36,9 @@ int main(int argc, char **argv)
   while (1)
   {
     clientlen = sizeof(clientaddr);
-    connfd = Accept(listenfd, (SA *)&clientaddr, 
-                    &clientlen); // line:netp:tiny:accept
+    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
     // Getnameinfo(address of client, length of client's address, hostname => ip address, MAXLINE,port, MAXLINE, flag)
-    Getnameinfo((SA *)&clientaddr, clientlen, 
-                hostname, MAXLINE, port, MAXLINE, 0);
+    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
     doit(connfd);  // line:netp:tiny:doit
     Close(connfd); // line:netp:tiny:close
@@ -130,13 +128,11 @@ void clienterror(int fd, char *cause, char *errnum,
   Rio_writen(fd, buf, strlen(buf));
   Rio_writen(fd, body, strlen(body));
 }
-
-/* read request-headers of client */
 void read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
-  Rio_readlineb(rp, buf, MAXLINE); //reand rp, write buf
-  while (strcmp(buf, "\r\n")) //if it finds empty line, expect to terminate of header
+  Rio_readlineb(rp, buf, MAXLINE);
+  while (strcmp(buf, "\r\n"))
   {
     Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
@@ -188,9 +184,12 @@ void serve_static(int fd, char *filename, int filesize)
   /* Send response body to client */
   srcfd = Open(filename, O_RDONLY, 0);
   srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+  srcp = (char*)Malloc(filesize);
+  Rio_readn(srcfd, srcp, filesize);
   Close(srcfd);
   Rio_writen(fd, srcp, filesize);
-  Munmap(srcp, filesize);
+  // Munmap(srcp, filesize);
+  free(srcp);
 }
 
 /*

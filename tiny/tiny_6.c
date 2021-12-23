@@ -16,6 +16,7 @@ void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
+// void echo(int connfd);
 
 int main(int argc, char **argv)
 {
@@ -36,13 +37,12 @@ int main(int argc, char **argv)
   while (1)
   {
     clientlen = sizeof(clientaddr);
-    connfd = Accept(listenfd, (SA *)&clientaddr, 
-                    &clientlen); // line:netp:tiny:accept
+    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
     // Getnameinfo(address of client, length of client's address, hostname => ip address, MAXLINE,port, MAXLINE, flag)
-    Getnameinfo((SA *)&clientaddr, clientlen, 
-                hostname, MAXLINE, port, MAXLINE, 0);
+    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
     doit(connfd);  // line:netp:tiny:doit
+    // echo(connfd);
     Close(connfd); // line:netp:tiny:close
   }
 }
@@ -130,13 +130,11 @@ void clienterror(int fd, char *cause, char *errnum,
   Rio_writen(fd, buf, strlen(buf));
   Rio_writen(fd, body, strlen(body));
 }
-
-/* read request-headers of client */
 void read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
-  Rio_readlineb(rp, buf, MAXLINE); //reand rp, write buf
-  while (strcmp(buf, "\r\n")) //if it finds empty line, expect to terminate of header
+  Rio_readlineb(rp, buf, MAXLINE);
+  while (strcmp(buf, "\r\n"))
   {
     Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
@@ -230,3 +228,22 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 }
 
 
+/*
+ * echo - read and echo text lines until client closes connection
+ */
+/* $begin echo */
+
+void echo(int connfd) 
+{
+    size_t n; 
+    char buf[MAXLINE]; 
+    rio_t rio;
+
+    Rio_readinitb(&rio, connfd);
+    while((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
+	if (strcmp(buf, "\r\n") == 0)
+	    break;
+	Rio_writen(connfd, buf, n);
+    }
+}
+/* $end echo */

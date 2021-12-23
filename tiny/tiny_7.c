@@ -36,11 +36,9 @@ int main(int argc, char **argv)
   while (1)
   {
     clientlen = sizeof(clientaddr);
-    connfd = Accept(listenfd, (SA *)&clientaddr, 
-                    &clientlen); // line:netp:tiny:accept
+    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
     // Getnameinfo(address of client, length of client's address, hostname => ip address, MAXLINE,port, MAXLINE, flag)
-    Getnameinfo((SA *)&clientaddr, clientlen, 
-                hostname, MAXLINE, port, MAXLINE, 0);
+    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
     doit(connfd);  // line:netp:tiny:doit
     Close(connfd); // line:netp:tiny:close
@@ -130,13 +128,11 @@ void clienterror(int fd, char *cause, char *errnum,
   Rio_writen(fd, buf, strlen(buf));
   Rio_writen(fd, body, strlen(body));
 }
-
-/* read request-headers of client */
 void read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
-  Rio_readlineb(rp, buf, MAXLINE); //reand rp, write buf
-  while (strcmp(buf, "\r\n")) //if it finds empty line, expect to terminate of header
+  Rio_readlineb(rp, buf, MAXLINE);
+  while (strcmp(buf, "\r\n"))
   {
     Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
@@ -180,8 +176,8 @@ void serve_static(int fd, char *filename, int filesize)
   sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
   sprintf(buf, "%sConnection: close\r\n", buf);
   sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
-  sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
-  Rio_writen(fd, buf, strlen(buf)); //client쪽으로 쓴다. connfd에
+  sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype); // header 끝남을 알려주기 위해 \r\n\r\n 두번 썼다.
+  Rio_writen(fd, buf, strlen(buf)); //connfd에 client쪽으로 쓴다.  
   printf("Response headers:\n");
   printf("%s", buf); //위에 한꺼번에 출력
 
@@ -206,9 +202,12 @@ void get_filetype(char *filename, char *filetype)
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
     strcpy(filetype, "image/jpeg");
+  else if (strstr(filename, ".mpeg"))
+    strcpy(filetype, "video/mpeg");
   else
     strcpy(filetype, "text/plain");
 }
+
 void serve_dynamic(int fd, char *filename, char *cgiargs)
 {
   char buf[MAXLINE], *emptylist[] = {NULL};
